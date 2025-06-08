@@ -17,9 +17,10 @@ yt = None
 def fetch_streams():
     """Fetch available streams for the provided URL."""
     global yt
-    url = url_entry.get()
+    url = url_entry.get().strip()
+    sanitized_url = url.split("&")[0]
     try:
-        yt = YouTube(url, on_progress_callback=on_progress)
+        yt = YouTube(sanitized_url, on_progress_callback=on_progress)
         streams = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
         stream_list.clear()
         for stream in streams:
@@ -27,7 +28,11 @@ def fetch_streams():
         resolution_combo['values'] = [stream.resolution for stream in streams]
         resolution_combo.current(0)
     except Exception as e:
-        messagebox.showerror("Error", f"Failed to fetch video streams: {e}")
+        print(e)
+        messagebox.showerror(
+            "Error",
+            "This video might be private, restricted, region-locked, or unsupported. Try a different one."
+        )
 
 def download_video():
     selected_stream = stream_list[resolution_combo.current()]
