@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import os
 from pytube import YouTube
+import yt_dlp
 
 
 def on_progress(stream, chunk, bytes_remaining):
@@ -36,12 +38,17 @@ def fetch_streams():
         )
 
 def download_video():
-    selected_stream = stream_list[resolution_combo.current()]
     directory = filedialog.askdirectory()
     if directory:
         progress_bar['value'] = 0
+        ydl_opts = {
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
+            'outtmpl': os.path.join(directory, '%(title)s.%(ext)s'),
+            'noprogress': True
+        }
         try:
-            selected_stream.download(output_path=directory)
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url_entry.get().strip().split('&')[0]])
             messagebox.showinfo("Success", "Download completed!")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to download video: {e}")
