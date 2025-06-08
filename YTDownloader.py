@@ -1,18 +1,21 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
-import yt_dlp
 from yt_dlp import YoutubeDL
-import subprocess
 
 
-def on_progress(stream, chunk, bytes_remaining):
-    """Update progress bar based on download progress."""
-    if stream.filesize == 0:
-        return
-    percent = (stream.filesize - bytes_remaining) / stream.filesize * 100
-    progress_bar['value'] = percent
-    root.update_idletasks()
+def on_progress(d):
+    """Update progress bar based on yt-dlp download progress."""
+    if d.get('status') == 'downloading':
+        total = d.get('total_bytes') or d.get('total_bytes_estimate')
+        downloaded = d.get('downloaded_bytes', 0)
+        if total:
+            percent = downloaded / total * 100
+            progress_bar['value'] = percent
+            root.update_idletasks()
+    elif d.get('status') == 'finished':
+        progress_bar['value'] = 100
+        root.update_idletasks()
 
 def fetch_formats():
     """Fetch available video formats for the provided URL using yt-dlp."""
@@ -45,26 +48,26 @@ def download_video():
     directory = filedialog.askdirectory()
     if not directory:
         return
-    # Build yt-dlp command: best MP4 video + best M4A audio, merge into MP4
-    cmd = [
-        "yt-dlp",
-        "-f",
-        "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
-        "--remux-video",
-        "mp4",
-        "-o",
-        f"{directory}/%(title)s.%(ext)s",
-        url,
-    ]
+    progress_bar['value'] = 0
+    root.update_idletasks()
+    # yt-dlp options with progress hook
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio',
+        'merge_output_format': 'mp4',
+        'outtmpl': os.path.join(directory, '%(title)s.%(ext)s'),
+        'progress_hooks': [on_progress],
+        'quiet': True,
+    }
+
     try:
-        subprocess.run(cmd, check=True)
+        with YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
         messagebox.showinfo("Success", "Download completed!")
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         messagebox.showerror(
             "Download Failed",
             "Couldn\u2019t assemble an mp4+audio combo. "
-            "Try a different video/resolution or install ffmpeg.\n"
-            f"(exit code {e.returncode})",
+            "Try a different video/resolution or install ffmpeg.\n" + str(e)
         )
 
 # Create the main window
