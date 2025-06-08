@@ -48,16 +48,24 @@ def download_video():
     # Build yt-dlp command: best MP4 video + best M4A audio, merge into MP4
     cmd = [
         "yt-dlp",
-        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]",
-        "--merge-output-format", "mp4",
-        "-o", f"{directory}/%(title)s.%(ext)s",
+        "-f",
+        "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
+        "--remux-video",
+        "mp4",
+        "-o",
+        f"{directory}/%(title)s.%(ext)s",
         url,
     ]
     try:
         subprocess.run(cmd, check=True)
         messagebox.showinfo("Success", "Download completed!")
     except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"yt-dlp failed: {e}")
+        messagebox.showerror(
+            "Download Failed",
+            "Couldn\u2019t assemble an mp4+audio combo. "
+            "Try a different video/resolution or install ffmpeg.\n"
+            f"(exit code {e.returncode})",
+        )
 
 # Create the main window
 root = tk.Tk()
