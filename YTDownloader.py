@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog, messagebox
 import os
 import yt_dlp
 from yt_dlp import YoutubeDL
+import subprocess
 
 
 def on_progress(stream, chunk, bytes_remaining):
@@ -38,21 +39,25 @@ def fetch_formats():
 
 def download_video():
     url = url_entry.get().strip()
+    if not url:
+        messagebox.showerror("Error", "Please enter a YouTube URL.")
+        return
     directory = filedialog.askdirectory()
     if not directory:
         return
-    chosen = stream_list[resolution_combo.current()]
-    ydl_opts = {
-        'format': chosen['format_id'],
-        'outtmpl': f'{directory}/%(title)s.%(ext)s',
-        'merge_output_format': 'mp4',
-    }
+    # Build yt-dlp command: best MP4 video + best M4A audio, merge into MP4
+    cmd = [
+        "yt-dlp",
+        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]",
+        "--merge-output-format", "mp4",
+        "-o", f"{directory}/%(title)s.%(ext)s",
+        url,
+    ]
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+        subprocess.run(cmd, check=True)
         messagebox.showinfo("Success", "Download completed!")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to download video: {e}")
+    except subprocess.CalledProcessError as e:
+        messagebox.showerror("Error", f"yt-dlp failed: {e}")
 
 # Create the main window
 root = tk.Tk()
