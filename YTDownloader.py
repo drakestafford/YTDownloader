@@ -19,9 +19,10 @@ yt = None
 def fetch_streams():
     """Fetch available streams for the provided URL."""
     global yt
-    url = url_entry.get()
+    url = url_entry.get().strip()
+    sanitized_url = url.split("&")[0]
     try:
-        yt = YouTube(url, on_progress_callback=on_progress)
+        yt = YouTube(sanitized_url, on_progress_callback=on_progress)
         streams = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
         stream_list.clear()
         for stream in streams:
