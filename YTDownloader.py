@@ -2,11 +2,25 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from pytube import YouTube
 
+
+def on_progress(stream, chunk, bytes_remaining):
+    """Update progress bar based on download progress."""
+    if stream.filesize == 0:
+        return
+    percent = (stream.filesize - bytes_remaining) / stream.filesize * 100
+    progress_bar['value'] = percent
+    root.update_idletasks()
+
+yt = None
+
+
 def fetch_streams():
+    """Fetch available streams for the provided URL."""
+    global yt
     url = url_entry.get()
     try:
-        video = YouTube(url)
-        streams = video.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
+        yt = YouTube(url, on_progress_callback=on_progress)
+        streams = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
         stream_list.clear()
         for stream in streams:
             stream_list.append(stream)
@@ -19,6 +33,7 @@ def download_video():
     selected_stream = stream_list[resolution_combo.current()]
     directory = filedialog.askdirectory()
     if directory:
+        progress_bar['value'] = 0
         try:
             selected_stream.download(output_path=directory)
             messagebox.showinfo("Success", "Download completed!")
@@ -28,7 +43,7 @@ def download_video():
 # Create the main window
 root = tk.Tk()
 root.title("YouTube Downloader")
-root.geometry("600x200")  # Width x Height
+root.geometry("600x230")  # Width x Height
 
 stream_list = []
 
@@ -50,6 +65,10 @@ fetch_button.pack(side=tk.LEFT, padx=(50,20), pady=10)
 
 download_button = tk.Button(root, text="Download Video", command=download_video)
 download_button.pack(side=tk.RIGHT, padx=(20,50), pady=10)
+
+# Progress bar
+progress_bar = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
+progress_bar.pack(fill="x", padx=10, pady=(0,10))
 
 # Start the GUI event loop
 root.mainloop()
