@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
-from pytube import YouTube
 import yt_dlp
+from yt_dlp import YoutubeDL
 
 
 def on_progress(stream, chunk, bytes_remaining):
@@ -13,45 +13,46 @@ def on_progress(stream, chunk, bytes_remaining):
     progress_bar['value'] = percent
     root.update_idletasks()
 
-yt = None
-
-
-def fetch_streams():
-    """Fetch available streams for the provided URL."""
-    global yt
-    url = url_entry.get()
+def fetch_formats():
+    """Fetch available video formats for the provided URL using yt-dlp."""
+    url = url_entry.get().strip()
     try:
-        yt = YouTube(url, on_progress_callback=on_progress)
-        streams = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
+        ydl = YoutubeDL({'quiet': True, 'skip_download': True})
+        info = ydl.extract_info(url, download=False)
+        mp4_formats = [
+            f for f in info['formats']
+            if f.get('ext') == 'mp4' and f.get('vcodec') != 'none'
+        ]
         stream_list.clear()
-        for stream in streams:
-            stream_list.append(stream)
-        resolution_combo['values'] = [stream.resolution for stream in streams]
+        stream_list.extend(mp4_formats)
+        resolution_combo['values'] = [
+            f.get('format_note') or f['height'] for f in mp4_formats
+        ]
         resolution_combo.current(0)
     except Exception as e:
-        # Log the real error to the terminal for debugging purposes
-        print(f"Failed to fetch video streams: {e}")
-        # Show a user-friendly message in the popup dialog
+        print(f"Failed to fetch video formats: {e}")
         messagebox.showerror(
             "Error",
             "This video might be private, restricted, region-locked, or unsupported. Try a different one."
         )
 
 def download_video():
+    url = url_entry.get().strip()
     directory = filedialog.askdirectory()
-    if directory:
-        progress_bar['value'] = 0
-        ydl_opts = {
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
-            'outtmpl': os.path.join(directory, '%(title)s.%(ext)s'),
-            'noprogress': True
-        }
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url_entry.get().strip().split('&')[0]])
-            messagebox.showinfo("Success", "Download completed!")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to download video: {e}")
+    if not directory:
+        return
+    chosen = stream_list[resolution_combo.current()]
+    ydl_opts = {
+        'format': chosen['format_id'],
+        'outtmpl': f'{directory}/%(title)s.%(ext)s',
+        'merge_output_format': 'mp4',
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        messagebox.showinfo("Success", "Download completed!")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to download video: {e}")
 
 # Create the main window
 root = tk.Tk()
@@ -73,7 +74,7 @@ resolution_combo = ttk.Combobox(root, state="readonly", width=58)
 resolution_combo.pack(padx=10, pady=(0,10))
 
 # Fetch streams and download buttons
-fetch_button = tk.Button(root, text="Fetch Streams", command=fetch_streams)
+fetch_button = tk.Button(root, text="Fetch Streams", command=fetch_formats)
 fetch_button.pack(side=tk.LEFT, padx=(50,20), pady=10)
 
 download_button = tk.Button(root, text="Download Video", command=download_video)
