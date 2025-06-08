@@ -27,7 +27,13 @@ def fetch_streams():
         resolution_combo['values'] = [stream.resolution for stream in streams]
         resolution_combo.current(0)
     except Exception as e:
-        messagebox.showerror("Error", f"Failed to fetch video streams: {e}")
+        # Log the real error to the terminal for debugging purposes
+        print(f"Failed to fetch video streams: {e}")
+        # Show a user-friendly message in the popup dialog
+        messagebox.showerror(
+            "Error",
+            "This video might be private, restricted, region-locked, or unsupported. Try a different one."
+        )
 
 def download_video():
     selected_stream = stream_list[resolution_combo.current()]
