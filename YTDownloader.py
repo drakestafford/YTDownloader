@@ -28,7 +28,6 @@ def fetch_streams():
             if (
                 f.get('ext') == 'mp4'
                 and f.get('vcodec') != 'none'
-                and f.get('acodec') != 'none'
             )
         ]
 
@@ -37,11 +36,11 @@ def fetch_streams():
 
         unique_map = {}
         for s in mp4_streams:
-            res = s.get('format_note') or s.get('height')
-            if res not in unique_map:
+            res = s.get('height')
+            if res and res not in unique_map:
                 unique_map[res] = s
 
-        resolutions = list(unique_map.keys())
+        resolutions = [f"{h}p" for h in unique_map.keys()]
         stream_list.clear()
         stream_list.extend(unique_map.values())
         resolution_combo['values'] = resolutions
@@ -69,9 +68,13 @@ def download_video():
         messagebox.showerror("Error", "Please fetch streams first.")
         return
 
+    fmt = selected['format_id']
+    if selected.get('acodec') == 'none':
+        fmt = f"{fmt}+bestaudio[ext=m4a]/bestaudio"
+
     # yt-dlp options with progress hook for the chosen format
     ydl_opts = {
-        'format': selected['format_id'],
+        'format': fmt,
         'merge_output_format': 'mp4',
         'outtmpl': os.path.join(directory, '%(title)s.%(ext)s'),
         'progress_hooks': [on_progress],
