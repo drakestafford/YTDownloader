@@ -1,5 +1,5 @@
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from ttkbootstrap import Window, ttk
+from tkinter import filedialog, messagebox
 import os
 from yt_dlp import YoutubeDL
 
@@ -70,31 +70,31 @@ def download_video():
             "Try a different video/resolution or install ffmpeg.\n" + str(e)
         )
 
-# Create the main window
-root = tk.Tk()
+# Create the main window with a built-in ttkbootstrap theme
+root = Window(themename="flatly")
 root.title("YouTube Downloader")
 root.geometry("600x230")  # Width x Height
 
 stream_list = []
 
 # URL entry
-url_label = tk.Label(root, text="Enter YouTube URL:")
+url_label = ttk.Label(root, text="Enter YouTube URL:")
 url_label.pack(padx=10, pady=(10,0))
-url_entry = tk.Entry(root, width=60, bg='white', fg='dark blue', borderwidth=2, relief="groove")
+url_entry = ttk.Entry(root, width=60)
 url_entry.pack(padx=10, pady=(0,10))
 
 # Resolution dropdown
-resolution_label = tk.Label(root, text="Select Resolution:")
+resolution_label = ttk.Label(root, text="Select Resolution:")
 resolution_label.pack(padx=10, pady=(10,0))
 resolution_combo = ttk.Combobox(root, state="readonly", width=58)
 resolution_combo.pack(padx=10, pady=(0,10))
 
 # Fetch streams and download buttons
-fetch_button = tk.Button(root, text="Fetch Streams", command=fetch_formats)
-fetch_button.pack(side=tk.LEFT, padx=(50,20), pady=10)
+fetch_button = ttk.Button(root, text="Fetch Streams", command=fetch_formats)
+fetch_button.pack(side="left", padx=(50,20), pady=10)
 
-download_button = tk.Button(root, text="Download Video", command=download_video)
-download_button.pack(side=tk.RIGHT, padx=(20,50), pady=10)
+download_button = ttk.Button(root, text="Download Video", command=download_video)
+download_button.pack(side="right", padx=(20,50), pady=10)
 
 # Progress bar
 progress_bar = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
