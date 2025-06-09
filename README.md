@@ -23,6 +23,7 @@ Clone this repo:
    ```bash
    git clone https://github.com/drakestafford/YTDownloader.git
    cd YTDownloader
+   pip install -r requirements.txt
    ```
 ---
 
