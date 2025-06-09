@@ -20,6 +20,7 @@ def on_progress(d):
 def fetch_formats():
     """Fetch available video formats for the provided URL using yt-dlp."""
     url = url_entry.get().strip()
+    download_button.config(state=tk.DISABLED)
     try:
         ydl = YoutubeDL({'quiet': True, 'skip_download': True})
         info = ydl.extract_info(url, download=False)
@@ -32,13 +33,16 @@ def fetch_formats():
         resolution_combo['values'] = [
             f.get('format_note') or f['height'] for f in mp4_formats
         ]
-        resolution_combo.current(0)
+        if mp4_formats:
+            resolution_combo.current(0)
+            download_button.config(state=tk.NORMAL)
     except Exception as e:
         print(f"Failed to fetch video formats: {e}")
         messagebox.showerror(
             "Error",
             "This video might be private, restricted, region-locked, or unsupported. Try a different one."
         )
+        download_button.config(state=tk.DISABLED)
 
 def download_video():
     url = url_entry.get().strip()
@@ -73,32 +77,52 @@ def download_video():
 # Create the main window
 root = tk.Tk()
 root.title("YouTube Downloader")
-root.geometry("600x230")  # Width x Height
+# Keep the window compact but wide enough for inputs
+root.geometry("500x220")  # Width x Height
+
+# Ensure widgets expand nicely
+root.columnconfigure(0, weight=1)
 
 stream_list = []
 
-# URL entry
-url_label = tk.Label(root, text="Enter YouTube URL:")
-url_label.pack(padx=10, pady=(10,0))
-url_entry = tk.Entry(root, width=60, bg='white', fg='dark blue', borderwidth=2, relief="groove")
-url_entry.pack(padx=10, pady=(0,10))
+# Frame for URL input
+url_frame = ttk.Frame(root, padding=10)
+url_frame.grid(row=0, column=0, sticky="ew")
+url_frame.columnconfigure(1, weight=1)
 
-# Resolution dropdown
-resolution_label = tk.Label(root, text="Select Resolution:")
-resolution_label.pack(padx=10, pady=(10,0))
-resolution_combo = ttk.Combobox(root, state="readonly", width=58)
-resolution_combo.pack(padx=10, pady=(0,10))
+url_label = ttk.Label(url_frame, text="Enter YouTube URL:")
+url_label.grid(row=0, column=0, padx=(0,5), pady=5, sticky="w")
+url_entry = ttk.Entry(url_frame, width=60)
+url_entry.grid(row=0, column=1, padx=(0,5), pady=5, sticky="ew")
 
-# Fetch streams and download buttons
-fetch_button = tk.Button(root, text="Fetch Streams", command=fetch_formats)
-fetch_button.pack(side=tk.LEFT, padx=(50,20), pady=10)
+# Frame for resolution selection
+resolution_frame = ttk.Frame(root, padding=10)
+resolution_frame.grid(row=1, column=0, sticky="ew")
+resolution_frame.columnconfigure(1, weight=1)
 
-download_button = tk.Button(root, text="Download Video", command=download_video)
-download_button.pack(side=tk.RIGHT, padx=(20,50), pady=10)
+resolution_label = ttk.Label(resolution_frame, text="Select Resolution:")
+resolution_label.grid(row=0, column=0, padx=(0,5), pady=5, sticky="w")
+resolution_combo = ttk.Combobox(resolution_frame, state="readonly", width=58)
+resolution_combo.grid(row=0, column=1, padx=(0,5), pady=5, sticky="ew")
+
+# Frame for action buttons
+button_frame = ttk.Frame(root, padding=10)
+button_frame.grid(row=2, column=0, sticky="ew")
+button_frame.columnconfigure((0,1), weight=1)
+
+fetch_button = tk.Button(button_frame, text="Fetch Streams", command=fetch_formats)
+fetch_button.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+
+download_button = tk.Button(button_frame, text="Download Video", command=download_video, state=tk.DISABLED)
+download_button.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
 # Progress bar
-progress_bar = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
-progress_bar.pack(fill="x", padx=10, pady=(0,10))
+progress_frame = ttk.Frame(root, padding=(10,0,10,10))
+progress_frame.grid(row=3, column=0, sticky="ew")
+
+progress_bar = ttk.Progressbar(progress_frame, orient="horizontal", mode="determinate")
+progress_bar.grid(row=0, column=0, sticky="ew")
+progress_frame.columnconfigure(0, weight=1)
 
 # Start the GUI event loop
 root.mainloop()
