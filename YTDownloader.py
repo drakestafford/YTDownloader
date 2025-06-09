@@ -17,22 +17,36 @@ def on_progress(d):
         progress_bar['value'] = 100
         root.update_idletasks()
 
-def fetch_formats():
-    """Fetch available video formats for the provided URL using yt-dlp."""
+def fetch_streams():
+    """Fetch available video streams for the provided URL using yt-dlp."""
     url = url_entry.get().strip()
     try:
         ydl = YoutubeDL({'quiet': True, 'skip_download': True})
         info = ydl.extract_info(url, download=False)
-        mp4_formats = [
+        mp4_streams = [
             f for f in info['formats']
-            if f.get('ext') == 'mp4' and f.get('vcodec') != 'none'
+            if (
+                f.get('ext') == 'mp4'
+                and f.get('vcodec') != 'none'
+                and f.get('acodec') != 'none'
+            )
         ]
+
+        # sort by resolution descending
+        mp4_streams.sort(key=lambda f: f.get('height', 0), reverse=True)
+
+        unique_map = {}
+        for s in mp4_streams:
+            res = s.get('format_note') or s.get('height')
+            if res not in unique_map:
+                unique_map[res] = s
+
+        resolutions = list(unique_map.keys())
         stream_list.clear()
-        stream_list.extend(mp4_formats)
-        resolution_combo['values'] = [
-            f.get('format_note') or f['height'] for f in mp4_formats
-        ]
-        resolution_combo.current(0)
+        stream_list.extend(unique_map.values())
+        resolution_combo['values'] = resolutions
+        if resolutions:
+            resolution_combo.current(0)
     except Exception as e:
         print(f"Failed to fetch video formats: {e}")
         messagebox.showerror(
@@ -50,9 +64,14 @@ def download_video():
         return
     progress_bar['value'] = 0
     root.update_idletasks()
-    # yt-dlp options with progress hook
+    selected = stream_list[resolution_combo.current()] if stream_list else None
+    if not selected:
+        messagebox.showerror("Error", "Please fetch streams first.")
+        return
+
+    # yt-dlp options with progress hook for the chosen format
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio',
+        'format': selected['format_id'],
         'merge_output_format': 'mp4',
         'outtmpl': os.path.join(directory, '%(title)s.%(ext)s'),
         'progress_hooks': [on_progress],
@@ -90,7 +109,7 @@ resolution_combo = ttk.Combobox(root, state="readonly", width=58)
 resolution_combo.pack(padx=10, pady=(0,10))
 
 # Fetch streams and download buttons
-fetch_button = ttk.Button(root, text="Fetch Streams", command=fetch_formats)
+fetch_button = ttk.Button(root, text="Fetch Streams", command=fetch_streams)
 fetch_button.pack(side="left", padx=(50,20), pady=10)
 
 download_button = ttk.Button(root, text="Download Video", command=download_video)
