@@ -72,6 +72,8 @@ def download_video():
 
 # Create the main window
 root = tk.Tk()
+root.iconphoto(False, tk.PhotoImage(file="ds.icns"))
+root.option_add("*Font", ("Helvetica", 12))
 root.title("YouTube Downloader")
 root.geometry("600x230")  # Width x Height
 
