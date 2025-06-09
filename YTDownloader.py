@@ -104,7 +104,7 @@ def download_video():
     threading.Thread(target=run_download, daemon=True).start()
 
 # Create the main window with a built-in ttkbootstrap theme
-root = Window(themename="flatly")
+root = Window(themename="superhero")
 root.title("YouTube Downloader")
 root.geometry("600x230")  # Width x Height
 
