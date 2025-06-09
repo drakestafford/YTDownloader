@@ -10,9 +10,11 @@ Your go-to, no-fuss YouTube video downloader built with Python and a sprinkle of
 
 * **Easy GUI**: Simple input field + dropdown for resolution.
 * **Multiple Resolutions**: Grab videos in 360p, 720p, 1080p, and more.
-* **Progress Bar**: Watch your download zoom to completion.
+* **Progress Bar**: Watch MB progress update in real time while downloading.
 * **Error Handling**: Friendly popups guide you if something’s off.
 * **Cross-Platform**: Runs on macOS, Windows, and Linux (with Python 3).
+* **Theme Menu**: Quickly preview any ttkbootstrap theme.
+* **Right-Click Paste**: Use the URL box’s context menu for easy pasting.
 
 ---
 

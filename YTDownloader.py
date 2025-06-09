@@ -1,21 +1,29 @@
 from ttkbootstrap import Window, ttk
 from tkinter import filedialog, messagebox
+import tkinter as tk
+import threading
 import os
 from yt_dlp import YoutubeDL
 
 
+def update_progress(percent, text):
+    """Helper to update progress bar and label in the UI."""
+    progress_bar['value'] = percent
+    progress_label.config(text=text)
+    root.update_idletasks()
+
+
 def on_progress(d):
-    """Update progress bar based on yt-dlp download progress."""
+    """Update progress bar and label from yt-dlp progress hook."""
     if d.get('status') == 'downloading':
         total = d.get('total_bytes') or d.get('total_bytes_estimate')
         downloaded = d.get('downloaded_bytes', 0)
         if total:
             percent = downloaded / total * 100
-            progress_bar['value'] = percent
-            root.update_idletasks()
+            text = f"{downloaded/1048576:.1f}MB / {total/1048576:.1f}MB"
+            root.after(0, update_progress, percent, text)
     elif d.get('status') == 'finished':
-        progress_bar['value'] = 100
-        root.update_idletasks()
+        root.after(0, update_progress, 100, "Completed")
 
 def fetch_streams():
     """Fetch available video streams for the provided URL using yt-dlp."""
@@ -81,21 +89,32 @@ def download_video():
         'quiet': True,
     }
 
-    try:
-        with YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        messagebox.showinfo("Success", "Download completed!")
-    except Exception as e:
-        messagebox.showerror(
-            "Download Failed",
-            "Couldn\u2019t assemble an mp4+audio combo. "
-            "Try a different video/resolution or install ffmpeg.\n" + str(e)
-        )
+    def run_download():
+        try:
+            with YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            root.after(0, lambda: messagebox.showinfo("Success", "Download completed!"))
+        except Exception as e:
+            root.after(0, lambda: messagebox.showerror(
+                "Download Failed",
+                "Couldn\u2019t assemble an mp4+audio combo. "
+                "Try a different video/resolution or install ffmpeg.\n" + str(e)
+            ))
+
+    threading.Thread(target=run_download, daemon=True).start()
 
 # Create the main window with a built-in ttkbootstrap theme
 root = Window(themename="flatly")
 root.title("YouTube Downloader")
 root.geometry("600x230")  # Width x Height
+
+# Theme selection menu
+menubar = tk.Menu(root)
+theme_menu = tk.Menu(menubar, tearoff=False)
+for theme in root.style.theme_names():
+    theme_menu.add_command(label=theme, command=lambda t=theme: root.style.theme_use(t))
+menubar.add_cascade(label="Themes", menu=theme_menu)
+root.config(menu=menubar)
 
 stream_list = []
 
@@ -104,6 +123,12 @@ url_label = ttk.Label(root, text="Enter YouTube URL:")
 url_label.pack(padx=10, pady=(10,0))
 url_entry = ttk.Entry(root, width=60)
 url_entry.pack(padx=10, pady=(0,10))
+url_menu = tk.Menu(root, tearoff=False)
+url_menu.add_command(label="Paste", command=lambda: url_entry.event_generate("<<Paste>>"))
+def show_menu(e):
+    url_menu.tk_popup(e.x_root, e.y_root)
+url_entry.bind("<Button-3>", show_menu)
+url_entry.bind("<Control-Button-1>", show_menu)
 
 # Resolution dropdown
 resolution_label = ttk.Label(root, text="Select Resolution:")
@@ -118,7 +143,9 @@ fetch_button.pack(side="left", padx=(50,20), pady=10)
 download_button = ttk.Button(root, text="Download Video", command=download_video)
 download_button.pack(side="right", padx=(20,50), pady=10)
 
-# Progress bar
+# Progress bar and label
+progress_label = ttk.Label(root, text="")
+progress_label.pack(padx=10, pady=(0,5))
 progress_bar = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
 progress_bar.pack(fill="x", padx=10, pady=(0,10))
 
